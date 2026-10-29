@@ -1,5 +1,7 @@
 # BQ280 PoC handheld — QuecPython hardware bringup
 
+This is a device target, not a `core/port.h` implementation: the unit runs QuecPython (MicroPython), so the C++ core does not run on it. For the C++ route on the same module family see [ports/quecopen-ec600m](../../ports/quecopen-ec600m/README.md).
+
 Field notes for the white-label PoC walkie-talkie this project was tested on. Everything below
 was verified on the physical unit unless a line says otherwise.
 
