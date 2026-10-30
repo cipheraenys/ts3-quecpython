@@ -83,3 +83,22 @@ was verified on the physical unit unless a line says otherwise.
   working REPL; LCD backlight (GPIO14) and content (ST7735 fill).
 - **Not verified:** cellular data on the EU-LA firmware (no SIM in the unit); audio (mic/PTT/
   speaker) path; running this project's TS3 client under QuecPython.
+
+## Drivers
+
+`display.py`, `audio.py`, `keypad.py` implement the device contract (see the repo
+README). Constants are transcribed from verified REPL sessions; run each module's
+`demo()` on the device once to confirm.
+
+`display.py` imports the vendor `lcd_bf` ST7735 driver (QuecPython solution-POC,
+`baofeng` branch). It is not copied here — put `lcd_bf.py` on the device (e.g.
+`/usr/lcd_bf.py`) yourself.
+
+Deploy: upload the `.py` files to `/usr`, then:
+
+```python
+import sys; sys.path.append('/usr')   # /usr is not on the import path by default
+import display, audio, keypad
+display.init(); display.clear(display.RED)
+audio.say('halo'); print(keypad.ptt_pressed())
+```
