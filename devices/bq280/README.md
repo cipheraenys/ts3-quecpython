@@ -1,6 +1,6 @@
 # BQ280 PoC handheld — QuecPython hardware bring-up
 
-This is a device target, not a `core/port.h` implementation: the unit runs QuecPython (MicroPython). On the stock firmware the C++ core cannot run (no native `.mpy` support); a custom QuecPython firmware built from the public HeliosSDK is in progress, not yet flashed. For the C++ route on the same module family see [ts3-core `ports/quecopen-ec600m`](https://github.com/cipheraenys/ts3-core/tree/main/ports/quecopen-ec600m).
+This is a device target, not a `core/port.h` implementation: the unit runs QuecPython (MicroPython). On the stock firmware the C++ core cannot run (no native `.mpy` support); a custom QuecPython firmware built from the public HeliosSDK ([firmware/ec600m](../../firmware/ec600m/README.md)) is in progress, not yet flashed. For the C++ route on the same module family see [ts3-core `ports/quecopen-ec600m`](https://github.com/cipheraenys/ts3-core/tree/main/ports/quecopen-ec600m).
 
 ## Device
 

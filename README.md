@@ -35,6 +35,11 @@ loads — the built-in wins.
 
 - `devices/bq280/` — BQ280 handheld (EC600M / ASR1606). Hardware map in its README.
 
+## Firmware
+
+- `firmware/ec600m/` — QuecPython for the EC600M built from the public HeliosSDK, so C modules
+  can be added. Not flashed yet.
+
 ## Add a device
 
 Copy `devices/bq280/` to `devices/<name>/`, keep the module surface, retune the
