@@ -79,12 +79,16 @@ was verified on the physical unit unless a line says otherwise.
 
 ## Verified vs not
 
-- **Verified on hardware:** download-mode recovery and flashing; clean QuecPython boot and a
-  working REPL; LCD backlight (GPIO14) and fill (ST7735); the three driver modules import and
-  run (`keypad.read()` = 1201 idle on ADC ch1; `display.clear` fills; `sound.say` returns 0).
-- **Not verified:** cellular data on the EU-LA firmware (no SIM in the unit); mic record, the
-  PTT-pressed ADC swing, and actual speaker loudness (all need a person at the device);
-  running this project's TS3 client under QuecPython.
+- **Verified on hardware (colours and sound confirmed by eye and ear):** download-mode recovery
+  and flashing; clean QuecPython boot and a working REPL; LCD backlight (GPIO14) and fill with
+  correct RGB565 colours (`0xF800` red, `0x07E0` green) after a fresh `ST7735()` init;
+  `keypad.read()` = 1201 idle on ADC ch1; `sound.say` plays speech through the speaker.
+- **Not verified:** cellular data on the EU-LA firmware (no SIM in the unit); mic record and the
+  PTT-pressed ADC swing; running this project's TS3 client under QuecPython.
+- **Caveats:** the built-in TTS voice is Mandarin, so Latin words (e.g. "halo") are
+  mispronounced — it speaks, just not in the expected language. The LCD must be re-initialised
+  with a fresh `ST7735()` to clear correctly; a stale panel state left by a previous session can
+  show an old/wrong colour until it is re-init'd.
 
 ## Drivers
 

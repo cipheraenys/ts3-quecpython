@@ -28,7 +28,10 @@ def play_wav(path):
 
 
 def say(text, volume=TTS_VOLUME):
-    """Speak UTF-8 text via on-chip TTS. Returns 0 on success."""
+    """Speak UTF-8 text via on-chip TTS. Returns 0 on success.
+
+    The built-in TTS voice is Mandarin, so Latin words are mispronounced.
+    """
     global _tts
     if _tts is None:
         _tts = audio.TTS(0)
