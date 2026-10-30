@@ -1,11 +1,11 @@
 # BQ280 sound: speaker/PA, on-chip TTS, mic record.
 # Named `sound`, not `audio`: `audio` is a QuecPython built-in that would shadow this file.
-# Constants are the verified BQ280 config; retune per board.
+# BQ280 values; retune per board.
 import audio
 
 SPK_PA_GPIO = 25
-SPK_VOLUME = 11          # max safe on BQ280 (<= 11)
-TTS_VOLUME = 9           # <= 9
+SPK_VOLUME = 11          # 0..11, API maximum
+TTS_VOLUME = 9           # 0..9, API maximum
 
 _spk = None
 _tts = None

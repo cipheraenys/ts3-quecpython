@@ -1,11 +1,11 @@
 # BQ280 keypad / PTT on ADC channel 1 (resistor ladder).
-# Idle and pressed readings are the verified BQ280 values; retune per board.
+# IDLE verified on the BQ280 (1201); PTT_PRESSED unverified. Retune per board.
 from misc import ADC
 
 PTT_CHANNEL = 1
-IDLE = 1201              # ~reading when nothing is pressed
-PTT_PRESSED = 493        # ~reading while PTT is held
-THRESHOLD = (IDLE + PTT_PRESSED) // 2   # midpoint
+IDLE = 1201              # nothing pressed
+PTT_PRESSED = 493        # PTT held
+THRESHOLD = (IDLE + PTT_PRESSED) // 2
 
 _adc = None
 

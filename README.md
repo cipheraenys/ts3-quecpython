@@ -4,29 +4,28 @@ QuecPython device layer for the TS3-RTOS client on handheld PoC radios. The
 portable client core is a separate repo: https://github.com/cipheraenys/ts3-core
 
 One folder per device under `devices/`. Every device implements the same small
-surface, so the app code above stays device-agnostic — the same idea as
-`core/port.h` on the C side.
+surface, so app code can stay device-agnostic.
 
 ## Device contract
 
 Each `devices/<name>/` provides three modules with this surface:
 
-**display.py**
+### `display.py`
 - `init()` — power the panel, return the driver
 - `clear(color)` — fill the screen (RGB565)
 - `lvgl_attach()` — register as an LVGL display, return the active screen
 
-**sound.py**
+### `sound.py`
 - `say(text, volume=...)` — on-chip TTS, returns 0 on success
 - `play_wav(path)` — play a WAV through the speaker
 - `record(path, seconds)` — record the mic to a WAV
 
-**keypad.py**
+### `keypad.py`
 - `read()` — raw key / PTT reading
 - `ptt_pressed()` — True while PTT is held
 
-The constants at the top of each module (pins, thresholds, controller) are the
-only part that changes between boards.
+Board-specific values are constants at the top of each module; a different LCD
+controller also needs a different driver.
 
 Module names must not shadow a QuecPython built-in: `audio` is one, so the
 speaker/TTS module is named `sound`. A file named `audio.py` on the path never
