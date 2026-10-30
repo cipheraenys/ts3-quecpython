@@ -80,15 +80,20 @@ was verified on the physical unit unless a line says otherwise.
 ## Verified vs not
 
 - **Verified on hardware:** download-mode recovery and flashing; clean QuecPython boot and a
-  working REPL; LCD backlight (GPIO14) and content (ST7735 fill).
-- **Not verified:** cellular data on the EU-LA firmware (no SIM in the unit); audio (mic/PTT/
-  speaker) path; running this project's TS3 client under QuecPython.
+  working REPL; LCD backlight (GPIO14) and fill (ST7735); the three driver modules import and
+  run (`keypad.read()` = 1201 idle on ADC ch1; `display.clear` fills; `sound.say` returns 0).
+- **Not verified:** cellular data on the EU-LA firmware (no SIM in the unit); mic record, the
+  PTT-pressed ADC swing, and actual speaker loudness (all need a person at the device);
+  running this project's TS3 client under QuecPython.
 
 ## Drivers
 
-`display.py`, `audio.py`, `keypad.py` implement the device contract (see the repo
+`display.py`, `sound.py`, `keypad.py` implement the device contract (see the repo
 README). Constants are transcribed from verified REPL sessions; run each module's
 `demo()` on the device once to confirm.
+
+The speaker/TTS module is `sound.py`, not `audio.py`: `audio` is a QuecPython
+built-in and a file of that name on the path would never load (the built-in wins).
 
 `display.py` imports the vendor `lcd_bf` ST7735 driver (QuecPython solution-POC,
 `baofeng` branch). It is not copied here — put `lcd_bf.py` on the device (e.g.
@@ -98,7 +103,7 @@ Deploy: upload the `.py` files to `/usr`, then:
 
 ```python
 import sys; sys.path.append('/usr')   # /usr is not on the import path by default
-import display, audio, keypad
+import display, sound, keypad
 display.init(); display.clear(display.RED)
-audio.say('halo'); print(keypad.ptt_pressed())
+sound.say('halo'); print(keypad.ptt_pressed())
 ```

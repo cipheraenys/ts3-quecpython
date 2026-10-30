@@ -16,7 +16,7 @@ Each `devices/<name>/` provides three modules with this surface:
 - `clear(color)` — fill the screen (RGB565)
 - `lvgl_attach()` — register as an LVGL display, return the active screen
 
-**audio.py**
+**sound.py**
 - `say(text, volume=...)` — on-chip TTS, returns 0 on success
 - `play_wav(path)` — play a WAV through the speaker
 - `record(path, seconds)` — record the mic to a WAV
@@ -27,6 +27,10 @@ Each `devices/<name>/` provides three modules with this surface:
 
 The constants at the top of each module (pins, thresholds, controller) are the
 only part that changes between boards.
+
+Module names must not shadow a QuecPython built-in: `audio` is one, so the
+speaker/TTS module is named `sound`. A file named `audio.py` on the path never
+loads — the built-in wins.
 
 ## Devices
 

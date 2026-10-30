@@ -1,4 +1,5 @@
-# BQ280 audio: speaker/PA, on-chip TTS, mic record.
+# BQ280 sound: speaker/PA, on-chip TTS, mic record.
+# Named `sound`, not `audio`: `audio` is a QuecPython built-in that would shadow this file.
 # Constants are the verified BQ280 config; retune per board.
 import audio
 
