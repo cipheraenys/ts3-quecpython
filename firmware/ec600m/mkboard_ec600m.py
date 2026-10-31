@@ -1,8 +1,9 @@
 """Create the EC600MEU_LA board in HeliosSDK from EC600NCN_LA.
 
 Installs the EC600M ql_common_api.a, ec600m_shim.c and linkscript.ld; patches libHeliosAPI.a
-(weakened duplicates, LCD init converter, pin maps); generates ec600m_api_names.h; turns off
-unused features; registers the board in platform.json. Run patch_sdk_ec600m.py as well.
+(weakened duplicates, LCD init and UART config redirected to the shim, pin and UART maps);
+generates ec600m_api_names.h; turns off unused features; registers the board in platform.json.
+Run patch_sdk_ec600m.py as well.
 
 usage: mkboard_ec600m.py [<sdk root>]
 env:   CROSS (toolchain prefix), QUECOPEN_SDK (EC600M QuecOpen ql-sdk directory)
@@ -48,9 +49,12 @@ shutil.copyfile(os.path.join(here, "ec600m_linkscript.ld"), os.path.join(dst, "l
 print("board files: ql_common_api.a (EC600M), ec600m_shim.c, linkscript.ld")
 
 subprocess.run([CROSS + "objcopy"] + ["--weaken-symbol=" + s for s in DUPS] + [lib], check=True)
-# EC600N and EC600M disagree on the ql_lcd_data_t layout; the shim converts.
-subprocess.run([CROSS + "objcopy", "--redefine-sym", "ql_lcd_init=ec600n_ql_lcd_init", lib], check=True)
-print("libHeliosAPI.a: weakened %d duplicates, ql_lcd_init -> ec600n_ql_lcd_init" % len(DUPS))
+# Calls the shim adapts: LCD init struct layout; UART config result and receive callback.
+subprocess.run([CROSS + "objcopy",
+                "--redefine-sym", "ql_lcd_init=ec600n_ql_lcd_init",
+                "--redefine-sym", "ql_uart_set_dcbconfig=ec600m_uart_set_dcbconfig",
+                "--redefine-sym", "Helios_UART_Init=ec600n_Helios_UART_Init", lib], check=True)
+print("libHeliosAPI.a: weakened %d duplicates, LCD init and UART init/config -> shim" % len(DUPS))
 subprocess.run([sys.executable, "-I", os.path.join(here, "patch_maps_ec600m.py"), lib], check=True)
 subprocess.run([sys.executable, "-I", os.path.join(here, "gen_api_names.py"), sdk, api, lib,
                 os.path.join(dst, "ec600m_shim.c"), os.path.join(dst, "ec600m_api_names.h")],

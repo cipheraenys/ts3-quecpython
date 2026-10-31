@@ -2,10 +2,11 @@
 
 Builds QuecPython for the Quectel EC600M (ASR1606) from the public HeliosSDK, which has no
 EC600M board. The new board `EC600MEU_LA` links the EC600N `libHeliosAPI.a` with the EC600M
-`ql_common_api`; `ec600m_shim.c` bridges the differences (missing kernel names, LCD init
-layout, NOR flash API, per-task storage).
+`ql_common_api`; `ec600m_shim.c` bridges the differences (missing kernel names, UART init and
+receive callback, LCD init layout, NOR flash API, per-task storage).
 
-Status: the package builds and passes `verify_pkg.py`. Not flashed yet.
+Status: runs on the BQ280. The REPL answers on the USB REPL port; `machine.Pin`, `misc.ADC`
+and `audio.TTS` calls return normally. LCD, audio output and networking are not tested yet.
 
 ## Inputs (not in this repo)
 
@@ -46,6 +47,9 @@ adownload -u -a -s 115200 -q EC600MEULA_HELIOS.bin
 
 Then cold boot. To go back, flash the stock QuecPython package the same way.
 
+If `adownload` stops mid-transfer (USB error 31), run it again: the bootloader is erased by then,
+so the module stays in download mode.
+
 ## Boot self-test
 
 At boot the image looks up every kernel function it may call and writes the missing names to
@@ -57,13 +61,17 @@ import uctypes
 print(bytes(uctypes.bytearray_at(0x7E3A8CA8, 2048)).split(b'\0')[0].decode())
 ```
 
-A missing name means that feature returns -1; it has to be bridged in `ec600m_shim.c`.
+A missing name means that feature returns -1; it has to be bridged in `ec600m_shim.c`. The
+current build reports 62 of 299 missing: SMS, voice call, cell locator, Wi-Fi scan, FOTA, APN
+get/set, AMR stream, `printf`/`vprintf` and a few others.
 
 ## Limits
 
 - `Pin.GPIO42`..`45` are not available (the pin table keeps the EC600N's 41 entries).
 - Camera, QR code, JPEG, SD card and Quectel cloud are compiled out.
 - Device report (IMEI sent to Quectel) is compiled out.
+- `uos.uname()` shows an empty `qpyver` (`ql_dev_get_qpy_version` is missing).
+- ADC channel 1 reads about 1120 at idle; the stock firmware reads 1201. Not investigated.
 
 ## Files
 

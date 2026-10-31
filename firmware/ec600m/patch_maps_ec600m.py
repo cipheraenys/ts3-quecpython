@@ -1,7 +1,8 @@
-"""Replace the EC600N Pin.GPIOn and PWMn tables in libHeliosAPI.a with the EC600M ones.
+"""Replace the EC600N Pin.GPIOn, PWMn and UART tables in libHeliosAPI.a with the EC600M ones.
 
 EC600M values are from the stock EC600M QuecPython customer_app.bin (pin_map at file offsets
-0x129104 and 0x12926C, pwm_map at 0x12CEEC). The tables keep 41 GPIO entries, so the
+0x129104 and 0x12926C, pwm_map at 0x12CEEC, helios_uart_map at 0x129428). adc_map and the
+used spi_map entries are the same on both. The tables keep 41 GPIO entries, so the
 EC600M-only Pin.GPIO42..45 are not available.
 
 usage: patch_maps_ec600m.py <libHeliosAPI.a>
@@ -32,7 +33,11 @@ def table(ids, socs):
 PATCHES = [  # (object, section, expected EC600N bytes, EC600M bytes)
     (obj, ".rodata.pin_map", table(range(1, 42), EC600N_PINS), table(range(1, 42), EC600M_PINS))
     for obj in ("helios_gpio.c.o", "helios_extint.c.o", "helios_audio.c.o")
-] + [("helios_pwm.c.o", ".data.pwm_map", table(range(4), EC600N_PWM), table(range(4), EC600M_PWM))]
+] + [
+    ("helios_pwm.c.o", ".data.pwm_map", table(range(4), EC600N_PWM), table(range(4), EC600M_PWM)),
+    # HELIOS_UART3 (the REPL) is ql_uart port 4 on the EC600M, the USB REPL interface.
+    ("helios_uart.c.o", ".rodata.helios_uart_map", table(range(4), [0, 1, 2, 3]), table(range(4), [0, 1, 2, 4])),
+]
 
 with tempfile.TemporaryDirectory() as tmp:
     for obj, sec, old, new in PATCHES:

@@ -7,7 +7,7 @@
  * This file supplies them:
  *   - FWD()/FWD_AS(): by-name forwarders, same lookup and -1-on-miss as the Quectel stubs.
  *   - Bridges for calls whose EC600M counterpart has another name or layout: per-task storage,
- *     LCD write and init, NOR flash access.
+ *     UART config, LCD write and init, NOR flash access.
  *   - _sbrk bounded to the app RAM region (newlib heap).
  *   - The boot-time API self-test: records the kernel names this image uses that the kernel
  *     does not export (see ec600m_api_report).
@@ -128,9 +128,7 @@ FWD(ql_spi_write_read_4byte)
 FWD(ql_start_wifiscan)
 FWD(ql_tzget)
 FWD(ql_tzset)
-FWD(ql_uart_get_rx_data_len)
 FWD(ql_uart_register_tx_cb)
-FWD(ql_usb_get_connect_state)
 FWD(ql_usbdect_unregister_cb)
 FWD(ql_voicecall_set_auto_record)
 FWD(ql_voicecall_start_record)
@@ -143,6 +141,63 @@ FWD(ql_wifiscan_decode_buffer)
  * functions from Helios_Thread_Get/SetSpecific with the same (task, value) arguments. */
 FWD_AS(ql_rtos_task_get_specific, ql_rtos_task_get_context)
 FWD_AS(ql_rtos_task_set_specific, ql_rtos_task_set_context)
+
+/* Same arguments, EC600M kernel names (as called by the stock Helios_UART_Any and
+ * Helios_USB_GetStatus). The REPL polls both. */
+FWD_AS(ql_uart_get_rx_data_len, ql_uart_get_rxrb_data_len)
+FWD_AS(ql_usb_get_connect_state, ql_usb_connect_state)
+
+/* ---------------------------------------------------------------- UART */
+
+/* Helios_UART_Init calls this (renamed by mkboard). The USB REPL port (ql_uart port 4) rejects
+ * line settings with -4; the stock EC600M Helios_UART_Init ignores the result, the EC600N one
+ * fails the init and MicroPython never starts the REPL. */
+extern int ql_uart_set_dcbconfig(int port, void *dcb);
+
+int ec600m_uart_set_dcbconfig(int port, void *dcb)
+{
+    (void)ql_uart_set_dcbconfig(port, dcb);
+    return 0;
+}
+
+/* Receive callback. The EC600N Helios_UART_Init stores the callback at [ql port] and its kernel
+ * callback accepts ql ports 0..3 only, so input on the REPL (Helios UART3 = ql port 4) is
+ * dropped. mkboard renames the library's Helios_UART_Init to ec600n_Helios_UART_Init; this one
+ * keeps the callback by Helios port and maps the ql port back like the stock EC600M build. */
+typedef void (*helios_uart_cb_t)(uint64_t ind_type, int port, uint64_t size);
+typedef struct {
+    void *config;
+    helios_uart_cb_t cb;
+} helios_uart_init_t;
+
+extern int ec600n_Helios_UART_Init(int port, helios_uart_init_t *init);
+extern int ql_uart_register_cb(int port, void (*cb)(unsigned int port, void *para));
+
+static const uint8_t helios_to_ql[] = {0, 1, 2, 4}; /* = helios_uart_map after patch_maps */
+static helios_uart_cb_t uart_cb[sizeof helios_to_ql];
+
+static void ec600m_uart_cb(unsigned int ql_port, void *para)
+{
+    for (unsigned h = 0; h < sizeof helios_to_ql; h++) {
+        if (helios_to_ql[h] == ql_port && uart_cb[h]) {
+            uint64_t size;
+            memcpy(&size, para, sizeof size);
+            uart_cb[h](0, (int)h, size);
+            return;
+        }
+    }
+}
+
+int Helios_UART_Init(int port, helios_uart_init_t *init)
+{
+    helios_uart_init_t no_cb = {init->config, 0};
+    int r = ec600n_Helios_UART_Init(port, &no_cb); /* validates port 0..3 */
+    if (r || !init->cb)
+        return r;
+    uart_cb[port] = init->cb;
+    ql_uart_register_cb(helios_to_ql[port], ec600m_uart_cb);
+    return 0;
+}
 
 /* ---------------------------------------------------------------- LCD write */
 
