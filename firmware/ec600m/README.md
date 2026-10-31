@@ -46,7 +46,8 @@ Same as stock QuecPython (see [devices/bq280](../../devices/bq280/README.md)):
 adownload -u -a -s 115200 -q EC600MEULA_HELIOS.bin
 ```
 
-Then cold boot. To go back, flash the stock QuecPython package the same way.
+Then cold boot. Flashing rewrites `customer_fs`; copy the drivers back with
+[tools/upload.py](../../tools/upload.py). To go back, flash the stock QuecPython package the same way.
 
 If `adownload` stops mid-transfer (USB error 31), run it again: the bootloader is erased by then,
 so the module stays in download mode.

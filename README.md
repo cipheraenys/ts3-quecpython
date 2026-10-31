@@ -40,6 +40,11 @@ loads — the built-in wins.
 - `firmware/ec600m/` — QuecPython for the EC600M built from the public HeliosSDK, so C modules
   can be added. Runs on the BQ280; the `devices/bq280` drivers work on it.
 
+## Tools
+
+- `tools/upload.py` — copy files to the device over the REPL, e.g.
+  `python tools/upload.py COM16 devices/bq280/display.py=/usr/display.py`.
+
 ## Add a device
 
 Copy `devices/bq280/` to `devices/<name>/`, keep the module surface, retune the
