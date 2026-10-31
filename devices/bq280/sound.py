@@ -17,7 +17,8 @@ def speaker():
     if _spk is None:
         _spk = audio.Audio(0)
         _spk.set_pa(SPK_PA_GPIO)
-        _spk.setSpeakerpaSwitch(1)
+        if hasattr(_spk, "setSpeakerpaSwitch"):  # stock firmware only
+            _spk.setSpeakerpaSwitch(1)
         _spk.setVolume(SPK_VOLUME)
     return _spk
 
