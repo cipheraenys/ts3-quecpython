@@ -43,7 +43,8 @@ loads — the built-in wins.
 ## Tools
 
 - `tools/upload.py` — copy files to the device over the REPL, e.g.
-  `python tools/upload.py COM16 devices/bq280/display.py=/usr/display.py`.
+  `python tools/upload.py COM16 devices/bq280/display.py=/usr/display.py` (in Git Bash, set
+  `MSYS_NO_PATHCONV=1` so `/usr/...` is not rewritten to a Windows path).
 
 ## Add a device
 
