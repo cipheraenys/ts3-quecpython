@@ -5,9 +5,9 @@ EC600M board. The new board `EC600MEU_LA` links the EC600N `libHeliosAPI.a` with
 `ql_common_api`; `ec600m_shim.c` bridges the differences (missing kernel names, UART init and
 receive callback, LCD init layout, NOR flash API, per-task storage).
 
-Status: runs on the BQ280. The REPL answers on the USB REPL port; `machine.Pin` and `misc.ADC`
-work, and `audio.TTS` speaks through the speaker after `Audio(0).set_pa(25)`. LCD and networking
-are not tested yet.
+Status: runs on the BQ280. The REPL answers on the USB REPL port, and the
+[devices/bq280](../../devices/bq280/README.md) drivers work: ST7735 fill colors, TTS through the
+speaker, keypad ADC (1201 at idle, as on the stock firmware). Networking is not tested yet.
 
 ## Inputs (not in this repo)
 
@@ -73,7 +73,6 @@ get/set, AMR stream, `printf`/`vprintf` and a few others.
 - Device report (IMEI sent to Quectel) is compiled out.
 - `audio.Audio` has no `setSpeakerpaSwitch`; `set_pa` alone turns the speaker amplifier on.
 - `uos.uname()` shows an empty `qpyver` (`ql_dev_get_qpy_version` is missing).
-- ADC channel 1 reads about 1120 at idle; the stock firmware reads 1201. Not investigated.
 
 ## Files
 

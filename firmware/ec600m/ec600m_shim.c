@@ -14,7 +14,6 @@
  */
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h> /* malloc/free link to the ql_common_api stubs: kernel heap */
 #include <string.h>
 
 extern void *(*m_get_api_ptr)(const char *name);
@@ -215,16 +214,16 @@ int ql_lcd_write(unsigned char *buf, unsigned short sx, unsigned short sy,
 /* ---------------------------------------------------------------- LCD init */
 
 /*
- * libHeliosAPI.a builds the EC600N ql_lcd_data_t (36 bytes, 6-byte init entries, SPI clock in
- * kHz). The EC600M kernel takes a 48-byte struct with 3-byte init entries and clock enums.
- * mkboard renames libHeliosAPI's ql_lcd_init reference to ec600n_ql_lcd_init (below), which
- * converts and calls the real one. Both layouts are pinned by the asserts. Fields the EC600N
- * struct lacks take the stock EC600M QuecPython defaults (rclk 6.5 MHz, cmd bytes 0, polling);
- * wclk is converted from spi_clk_khz and falls back to 13 MHz.
+ * libHeliosAPI.a builds the EC600N ql_lcd_data_t (36 bytes, SPI clock in kHz). The EC600M
+ * QuecPython kernel takes the struct the stock EC600M Helios_LCD_Init builds: same 6-byte init
+ * entries, clock enums with rclk = wclk, work_mode 1, and two fields after +44 (a pin_map lookup,
+ * -1 when no pin is given, and a u16 left 0). mkboard renames libHeliosAPI's ql_lcd_init
+ * reference to ec600n_ql_lcd_init (below). Both layouts are pinned by the asserts. The QuecOpen
+ * header describes a different, 48-byte struct with 3-byte entries; this kernel does not take it.
  */
 struct ec600n_lcd_entry {
     uint8_t type;
-    uint16_t value; /* a DATA entry with len 2 carries two bytes: hi << 8 | lo */
+    uint16_t value;
     uint8_t len;
 };
 struct ec600n_lcd_data {
@@ -244,80 +243,48 @@ _Static_assert(offsetof(struct ec600n_lcd_data, spi_clk_khz) == 16, "EC600N clk 
 _Static_assert(offsetof(struct ec600n_lcd_data, type) == 26, "EC600N type at +26");
 _Static_assert(offsetof(struct ec600n_lcd_data, line_num) == 32, "EC600N line_num at +32");
 
-struct ec600m_lcd_entry {
-    uint8_t type, value, len;
-};
 struct ec600m_lcd_data {
-    struct ec600m_lcd_entry *init_para;
+    struct ec600n_lcd_entry *init_para;
     uint32_t init_para_len;
     uint16_t width, height;
     uint8_t cmd_col_set, cmd_row_set, cmd_mem_wr;
     uint32_t te_signal;
-    uint32_t spi_wclk, spi_rclk; /* QL_SPI_LCD_CLK_E */
+    uint32_t spi_wclk, spi_rclk;
     uint32_t lcd_id;
     uint16_t format, type, sample_edge, endian, line_num, data_line;
     uint8_t work_mode;
+    int32_t pin;
+    uint16_t pin_arg;
 };
-_Static_assert(sizeof(struct ec600m_lcd_entry) == 3, "EC600M init entry is 3 bytes");
-_Static_assert(sizeof(struct ec600m_lcd_data) == 48, "EC600M ql_lcd_data_t is 48 bytes");
 _Static_assert(offsetof(struct ec600m_lcd_data, te_signal) == 16, "EC600M te at +16");
 _Static_assert(offsetof(struct ec600m_lcd_data, spi_wclk) == 20, "EC600M wclk at +20");
-_Static_assert(offsetof(struct ec600m_lcd_data, format) == 32, "EC600M format at +32");
+_Static_assert(offsetof(struct ec600m_lcd_data, type) == 34, "EC600M type at +34");
 _Static_assert(offsetof(struct ec600m_lcd_data, line_num) == 40, "EC600M line_num at +40");
 _Static_assert(offsetof(struct ec600m_lcd_data, work_mode) == 44, "EC600M work_mode at +44");
-
-#define LCD_DATA 1 /* SPI_WRITE_DATA */
+_Static_assert(offsetof(struct ec600m_lcd_data, pin) == 48, "EC600M pin at +48");
+_Static_assert(offsetof(struct ec600m_lcd_data, pin_arg) == 52, "EC600M pin_arg at +52");
 
 extern int ql_lcd_init(struct ec600m_lcd_data *data);
 
-static struct ec600m_lcd_entry *lcd_cmds; /* kept for the kernel; replaced on re-init */
 static struct ec600m_lcd_data lcd_cfg;
-
-static uint32_t lcd_clk_enum(uint32_t khz)
-{
-    static const struct { uint32_t khz; uint8_t e; } map[] = {
-        {6500, 0}, {13000, 1}, {26000, 2}, {52000, 3}, {3250, 4}, {1625, 5},
-        {812, 6}, {813, 6}, /* 812.5 kHz, either rounding */
-    };
-    for (unsigned i = 0; i < sizeof map / sizeof map[0]; i++)
-        if (map[i].khz == khz)
-            return map[i].e;
-    return 1; /* 13 MHz, the stock default */
-}
 
 int ec600n_ql_lcd_init(const struct ec600n_lcd_data *n)
 {
-    uint32_t count = 0;
-    for (uint32_t i = 0; i < n->init_para_len; i++)
-        count += (n->init_para[i].type == LCD_DATA && n->init_para[i].len == 2) ? 2 : 1;
-
-    struct ec600m_lcd_entry *cmds = NULL;
-    if (count) {
-        cmds = malloc(count * sizeof *cmds);
-        if (!cmds)
-            return -1;
-        uint32_t o = 0;
-        for (uint32_t i = 0; i < n->init_para_len; i++) {
-            const struct ec600n_lcd_entry *e = &n->init_para[i];
-            if (e->type == LCD_DATA && e->len == 2) { /* 16-bit data: high byte first */
-                cmds[o++] = (struct ec600m_lcd_entry){LCD_DATA, (uint8_t)(e->value >> 8), 1};
-                cmds[o++] = (struct ec600m_lcd_entry){LCD_DATA, (uint8_t)e->value, 1};
-            } else {
-                cmds[o++] = (struct ec600m_lcd_entry){e->type, (uint8_t)e->value, e->len};
-            }
-        }
+    uint32_t clk;
+    switch (n->spi_clk_khz) { /* the stock build accepts these four */
+    case 6500: clk = 0; break;
+    case 26000: clk = 2; break;
+    case 52000: clk = 3; break;
+    default: clk = 1; break; /* 13 MHz */
     }
-    free(lcd_cmds);
-    lcd_cmds = cmds;
-
     memset(&lcd_cfg, 0, sizeof lcd_cfg);
-    lcd_cfg.init_para = cmds;
-    lcd_cfg.init_para_len = count;
+    lcd_cfg.init_para = n->init_para;
+    lcd_cfg.init_para_len = n->init_para_len;
     lcd_cfg.width = n->width;
     lcd_cfg.height = n->height;
     lcd_cfg.te_signal = n->te_signal;
-    lcd_cfg.spi_wclk = lcd_clk_enum(n->spi_clk_khz);
-    lcd_cfg.spi_rclk = 0; /* 6.5 MHz */
+    lcd_cfg.spi_wclk = clk;
+    lcd_cfg.spi_rclk = clk;
     lcd_cfg.lcd_id = n->lcd_id;
     lcd_cfg.format = n->format;
     lcd_cfg.type = n->type;
@@ -325,7 +292,8 @@ int ec600n_ql_lcd_init(const struct ec600n_lcd_data *n)
     lcd_cfg.endian = n->endian;
     lcd_cfg.line_num = n->line_num;
     lcd_cfg.data_line = n->data_line;
-    lcd_cfg.work_mode = 0; /* polling */
+    lcd_cfg.work_mode = 1;
+    lcd_cfg.pin = -1;
     return ql_lcd_init(&lcd_cfg);
 }
 

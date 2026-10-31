@@ -38,7 +38,7 @@ loads — the built-in wins.
 ## Firmware
 
 - `firmware/ec600m/` — QuecPython for the EC600M built from the public HeliosSDK, so C modules
-  can be added. Not flashed yet.
+  can be added. Runs on the BQ280 with the drivers below.
 
 ## Add a device
 
